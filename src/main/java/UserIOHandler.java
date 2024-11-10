@@ -41,12 +41,22 @@ public class UserIOHandler {
         String fullname = "";
         boolean fullnameCorrect = false;
         while (!fullnameCorrect) {
-            UserIOHandler.writeLineUTF8("Enter your full name. E.g. Иванов Иван Иванович:", outputStreamWriter, true);
+            UserIOHandler.writeLineUTF8("Enter your full name. E.g. Иванов Иван Иванович (only letters are acceptable):", outputStreamWriter, true);
             fullname = UserIOHandler.readLineUTF8(inputStreamReader);
+            fullnameCorrect = true;
             if (fullname.split(" ").length == 3) {
-                fullnameCorrect = true;
+                for (String str : fullname.split(" ")) {
+                    for (char c : str.toCharArray()) {
+                        if (!Character.isLetter(c)) {
+                            fullnameCorrect = false;
+                            System.out.println("Incorrect full name input! It can contain only letters.");
+                            break;
+                        }
+                    }
+                }
             } else {
                 System.out.println("Incorrect full name input! Use 'Surname Name Patronymic' pattern.");
+                fullnameCorrect = false;
             }
         }
 
