@@ -2,10 +2,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.lang.reflect.Array;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.*;
 
 public class UserIOHandler {
@@ -41,7 +40,7 @@ public class UserIOHandler {
         String fullname = "";
         boolean fullnameCorrect = false;
         while (!fullnameCorrect) {
-            UserIOHandler.writeLineUTF8("Enter your full name. E.g. Иванов Иван Иванович (only letters are acceptable):", outputStreamWriter, true);
+            UserIOHandler.writeLineUTF8("Введите ФИО. Например: Иванов Иван Иванович (допустимы только буквы):", outputStreamWriter, true);
             fullname = UserIOHandler.readLineUTF8(inputStreamReader);
             fullnameCorrect = true;
             if (fullname.split(" ").length == 3) {
@@ -49,13 +48,13 @@ public class UserIOHandler {
                     for (char c : str.toCharArray()) {
                         if (!Character.isLetter(c)) {
                             fullnameCorrect = false;
-                            System.out.println("Incorrect full name input! It can contain only letters.");
+                            UserIOHandler.writeLineUTF8("Неверный ввод! Допускаются только буквы.", outputStreamWriter, true);
                             break;
                         }
                     }
                 }
             } else {
-                System.out.println("Incorrect full name input! Use 'Surname Name Patronymic' pattern.");
+                UserIOHandler.writeLineUTF8("Неверный ввод ФИО! Используйте шаблон 'Фамилия Имя Отчество'.", outputStreamWriter, true);
                 fullnameCorrect = false;
             }
         }
@@ -71,42 +70,82 @@ public class UserIOHandler {
             throw new IOException("inputStreamReader and outputStreamWriter can not be null!");
         }
 
-        UserIOHandler.writeLineUTF8("Enter your birth date in format 'DAY.MOUNTH.YEAR'. E.g. 25.03.1998:", outputStreamWriter, true);
-        UserIOHandler.writeLineUTF8("Note that 32.01.2005 is interpreted as 01.02.2005", outputStreamWriter, true);
+        UserIOHandler.writeLineUTF8("Введите дату рождения в формате 'ДЕНЬ.МЕСЯЦ.ГОД'. Например, 25.03.1998.", outputStreamWriter, true);
+        UserIOHandler.writeLineUTF8("Замечание: ввод 32.01.2005 интерпретируется как 01.02.2005", outputStreamWriter, true);
 
         SimpleDateFormat dateFormatter = new SimpleDateFormat("dd.MM.yyyy");
-        Date correctUserBirthDay = null;
+        Date birthdayDateObject = null;
         Date currentDate = new Date();
         String userBirthInput;
         boolean dateCorrect = false;
         Calendar birthCalendar = Calendar.getInstance();
+
+        String[] parsedInput;
         while (!dateCorrect) {
             userBirthInput = UserIOHandler.readLineUTF8(inputStreamReader);
-            dateCorrect = true;
 
+            parsedInput = userBirthInput.split("\\.");
+            if (parsedInput.length != 3) {
+                UserIOHandler.writeLineUTF8("Неверный формат ввода даты! Используйте шаблон 'ДЕНЬ.МЕСЯЦ.ГОД'", outputStreamWriter, true);
+                continue;
+            }
+
+            int month;
             try {
-                correctUserBirthDay = dateFormatter.parse(userBirthInput);
-            } catch (ParseException e) {
-                dateCorrect = false;
-                UserIOHandler.writeLineUTF8("Incorrect birth day input! Use format 'DAY.MOUNTH.YEAR'", outputStreamWriter, true);
+                month = Integer.parseInt(parsedInput[1]);
+                if (month < 1 || month > 12) {
+                    UserIOHandler.writeLineUTF8("Неверный формат ввода месяца даты! Значение должно быть числом от 1 до 12.", outputStreamWriter, true);
+                    continue;
+                }
+            } catch (NumberFormatException e) {
+                UserIOHandler.writeLineUTF8("Неверный формат ввода месяца даты! Значение должно быть числом от 1 до 12.", outputStreamWriter, true);
                 continue;
             }
-            if (correctUserBirthDay == null) {
-                UserIOHandler.writeLineUTF8("Incorrect birth day input! Use format 'DAY.MOUNTH.YEAR'", outputStreamWriter, true);
+
+            int year;
+            try {
+                year = Integer.parseInt(parsedInput[2]);
+                if (year < 0) {
+                    UserIOHandler.writeLineUTF8("Неверный формат ввода года даты! Значение должно быть положительным числом.", outputStreamWriter, true);
+                    continue;
+                }
+            } catch (NumberFormatException e) {
+                UserIOHandler.writeLineUTF8("Неверный формат ввода года даты! Значение должно быть числом от 1 до 12.", outputStreamWriter, true);
                 continue;
             }
-            if (correctUserBirthDay.after(currentDate)) {
-                dateCorrect = false;
-                UserIOHandler.writeLineUTF8("Incorrect birth day input, it can not be in future.", outputStreamWriter, true);
+
+            int day;
+            try {
+                day = Integer.parseInt(parsedInput[0]);
+                if (day <= 0) {
+                    UserIOHandler.writeLineUTF8("Неверный формат ввода дня даты! Значение должно быть положительным числом.", outputStreamWriter, true);
+                    continue;
+                }
+                if (day > YearMonth.of(year, month).lengthOfMonth()) {
+                    UserIOHandler.writeLineUTF8("Неверный формат ввода дня даты! В предоставленном месяце дней меньше, чем указанный день.", outputStreamWriter, true);
+                    continue;
+                }
+            } catch (NumberFormatException e) {
+                UserIOHandler.writeLineUTF8("Неверный формат ввода дня даты! Значение должно быть положительным числом.", outputStreamWriter, true);
+                continue;
             }
-            birthCalendar.setTime(correctUserBirthDay);
+
+            Calendar temp = Calendar.getInstance();
+            temp.set(year, month - 1, day);
+            birthdayDateObject = temp.getTime();
+            if (birthdayDateObject.after(currentDate)) {
+                UserIOHandler.writeLineUTF8("Неверный формат ввода даты: дата не может быть в будущем.", outputStreamWriter, true);
+            } else {
+                birthCalendar.setTime(birthdayDateObject);
+                dateCorrect = true;
+            }
         }
 
         GregorianCalendar calendarBirthDay = new GregorianCalendar();
-        if (correctUserBirthDay == null) {
-            throw new IOException("Error reading user birth day, correctUserBirthDay is null.");
+        if (birthdayDateObject == null) {
+            throw new IOException("Error reading user birth day, birthdayDateObject is null.");
         }
-        calendarBirthDay.setTime(correctUserBirthDay);
+        calendarBirthDay.setTime(birthdayDateObject);
         return calendarBirthDay;
     }
 
